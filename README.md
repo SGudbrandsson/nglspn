@@ -24,7 +24,7 @@ The aim of this project is to be that Naglasúpan for side projects/developer in
 
 To provide a place where we can contribute the projects we're working on, show them off, get feedback, collaborate, and more.
 
-Where we can identify and oppportunities for shared infrastructure, and co-ordinate on building them.
+Where we can identify oppportunities for shared infrastructure, and co-ordinate on building them.
 
 > [!NOTE]
 > This is a WIP and many features are needed to fulfil the idea. But that's the easy bit
