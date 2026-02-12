@@ -33,14 +33,20 @@ Where we can identify and oppportunities for shared infrastructure, and co-ordin
 
 Claude should do a decent job of finding out, but basically there's a BACKEND and FRONTEND.
 
+Backend 
+```
 cd src/django-backend
 make bootstrap          # create db
 make seed               # create some test data
 make dev
+```
 
+Frontend
+```
 cd src/web-ui
 make install
 make dev
+```
 
 Should be good to go.
 
