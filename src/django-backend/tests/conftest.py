@@ -1,8 +1,34 @@
 import pytest
+from django.core.files.storage import InMemoryStorage
 from django.test import Client
 
 from api.auth.jwt import create_access_token, create_refresh_token
+from apps.emails.models import BroadcastEmailImage
 from tests.factories import ProjectFactory, TagFactory, UserFactory
+
+
+@pytest.fixture(autouse=True)
+def _allow_admin_ip(settings):
+    settings.ADMIN_ALLOWED_IPS = ["127.0.0.1"]
+
+
+@pytest.fixture(autouse=True)
+def _use_in_memory_storage(settings):
+    settings.STORAGES = {
+        **settings.STORAGES,
+        "default": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        },
+        "broadcast_images": {
+            "BACKEND": "django.core.files.storage.InMemoryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    # Django 6 resolves callable storage at field init time, so the S3 backend
+    # is already baked into the field. Swap it out directly for tests.
+    BroadcastEmailImage.image.field.storage = InMemoryStorage()
 
 
 @pytest.fixture

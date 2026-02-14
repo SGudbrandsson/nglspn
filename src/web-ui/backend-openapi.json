@@ -3191,6 +3191,14 @@
             },
             "title": "Images",
             "type": "array"
+          },
+          "won_competitions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/WonCompetitionInfo"
+            },
+            "title": "Won Competitions",
+            "type": "array"
           }
         },
         "required": [
