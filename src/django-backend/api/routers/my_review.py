@@ -219,7 +219,7 @@ def get_review_project(
     try:
         project = (
             Project.objects.select_related("owner")
-            .prefetch_related("tags", "tags__category", "images")
+            .prefetch_related("tags", "tags__category", "images", "won_competitions")
             .exclude(status__in=EXCLUDED_PROJECT_STATUSES)
             .get(id=project_id)
         )

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from ninja import Schema
 
-from api.schemas.project import ProjectImageResponse
+from api.schemas.project import ProjectImageResponse, WonCompetitionInfo
 from api.schemas.tag import TagWithCategoryResponse
 from api.schemas.user import UserResponse
 
@@ -97,8 +97,13 @@ class ReviewProjectDetailResponse(Schema):
     owner: UserResponse
     tags: list[TagWithCategoryResponse]
     images: list[ProjectImageResponse] = []
+    won_competitions: list[WonCompetitionInfo] = []
 
     @staticmethod
     def resolve_images(obj: Any) -> list[Any]:
         """Only return uploaded images."""
         return list(obj.images.filter(upload_status="uploaded"))
+
+    @staticmethod
+    def resolve_won_competitions(obj: Any) -> list[Any]:
+        return list(obj.won_competitions.all())
