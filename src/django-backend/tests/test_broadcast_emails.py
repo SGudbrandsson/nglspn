@@ -330,15 +330,6 @@ class TestBroadcastEmailAdmin:
 
 @pytest.mark.django_db
 class TestBroadcastEmailAdminViews:
-    @pytest.fixture(autouse=True)
-    def _use_simple_static_storage(self, settings):
-        settings.STORAGES = {
-            **settings.STORAGES,
-            "staticfiles": {
-                "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-            },
-        }
-
     def test_preview_returns_html(self, admin_client):
         broadcast = BroadcastEmailFactory(
             body_markdown="Hello **preview**!",
