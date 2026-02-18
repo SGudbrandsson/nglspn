@@ -252,7 +252,7 @@ function ProjectCard({ project }: { project: Project }) {
             src={mainImage.url}
             alt={project.title}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 768px) 50vw, 33vw"
           />
         )}
@@ -298,7 +298,7 @@ function CompetitionProjectCard({ project }: { project: CompetitionProject }) {
             src={project.main_image_url}
             alt={project.title}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 768px) 50vw, 33vw"
           />
         )}
