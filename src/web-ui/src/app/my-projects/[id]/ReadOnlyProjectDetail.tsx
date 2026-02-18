@@ -48,7 +48,7 @@ export function ReadOnlyProjectDetail({ project, showStatus = true }: ReadOnlyPr
       groups.get(key)!.tags.push(tag);
     }
     return Array.from(groups.values());
-  }, [project.tags]);
+  }, [project]);
 
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
