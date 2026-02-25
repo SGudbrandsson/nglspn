@@ -37,7 +37,7 @@
         <mj-divider border-color="#e2e8f0" border-width="1px" />
         {% block footer_extra %}{% endblock %}
         <mj-text align="center" font-size="14px" color="#64748b" padding-top="20px">
-          All great things start small
+          Byggjum, deilum, vöxum saman
         </mj-text>
         <mj-text align="center" font-size="12px" color="#9ca3af">
           &copy; {{ current_year }} Naglasúpan.

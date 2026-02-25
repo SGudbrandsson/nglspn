@@ -10,6 +10,6 @@ This code will expire in {{ expiry_minutes }} minutes.
 If you did not request this code, please ignore this email.
 
 ---
-All great things start small
+Byggjum, deilum, vöxum saman
 
 (c) {{ current_year }} Naglasúpan.

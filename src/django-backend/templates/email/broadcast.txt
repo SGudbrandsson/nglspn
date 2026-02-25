@@ -6,6 +6,6 @@
 ---
 Manage your email preferences: {{ profile_url }}
 
-All great things start small
+Byggjum, deilum, vöxum saman
 
 (c) {{ current_year }} Naglasúpan.

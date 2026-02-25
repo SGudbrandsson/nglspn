@@ -8,6 +8,6 @@ Great news — your project "{{ project_title }}" has been approved and is now l
 View your project: {{ project_url }}
 
 ---
-All great things start small
+Byggjum, deilum, vöxum saman
 
 (c) {{ current_year }} Naglasúpan.

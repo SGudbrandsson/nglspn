@@ -18,13 +18,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const project = await fetchProject(id);
     const mainImage = project.images?.find((img) => img.is_main) || project.images?.[0];
+    const title = project.tagline
+      ? `${project.title} — ${project.tagline}`
+      : project.title;
+    const description = project.description
+      ? project.description.length > 100
+        ? project.description.slice(0, 100).replace(/\s+\S*$/, "") + "…"
+        : project.description
+      : undefined;
     return {
-      title: project.title,
-      description: project.tagline || undefined,
+      title,
+      description: description,
       openGraph: {
-        title: project.title,
-        description: project.tagline || undefined,
-        ...(mainImage && { images: [{ url: mainImage.url }] }),
+        type: "website",
+        siteName: "naglasúpan",
+        url: `https://naglasupan.is/projects/${id}`,
+        title,
+        description: description,
+        ...(mainImage && {
+          images: [
+            {
+              url: mainImage.url,
+              ...(mainImage.width && { width: mainImage.width }),
+              ...(mainImage.height && { height: mainImage.height }),
+              alt: project.title,
+            },
+          ],
+        }),
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description: description,
+        ...(mainImage && { images: [mainImage.url] }),
       },
     };
   } catch {

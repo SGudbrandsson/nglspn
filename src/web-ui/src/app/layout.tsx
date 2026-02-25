@@ -19,8 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://naglasupan.is"),
   title: "naglasúpan",
-  description: "All great things start small",
+  description: "Byggjum, deilum, vöxum saman",
   icons: {
     icon: [
       { url: "/icons/favicon/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "naglasúpan",
-    description: "All great things start small",
+    description: "Byggjum, deilum, vöxum saman",
     images: [
       {
         url: "/icons/app/logo.png",
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "naglasúpan",
-    description: "All great things start small",
+    description: "Byggjum, deilum, vöxum saman",
     images: ["/icons/app/logo.png"],
   },
 };
