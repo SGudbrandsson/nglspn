@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { AuthProvider } from "@/contexts/auth";
 import { MaintenanceProvider } from "@/contexts/maintenance";
 import { Navigation } from "@/components/Navigation";
+import { PlausibleTracker } from "@/components/PlausibleTracker";
 import "./globals.css";
 
 const inter = Inter({
@@ -48,6 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+        <PlausibleTracker />
         <MaintenanceProvider>
           <AuthProvider>
             <Suspense>
