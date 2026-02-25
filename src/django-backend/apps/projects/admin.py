@@ -96,6 +96,7 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = (
         "title",
         "owner_link",
+        "owner_promo_opt_in",
         "status",
         "is_featured",
         "monthly_visitors",
@@ -103,7 +104,14 @@ class ProjectAdmin(admin.ModelAdmin):
         "submission_month",
         "created_at",
     )
-    list_filter = ("status", "is_featured", "submission_month", "created_at", "tags")
+    list_filter = (
+        "status",
+        "is_featured",
+        "owner__opt_in_to_external_promotions",
+        "submission_month",
+        "created_at",
+        "tags",
+    )
     search_fields = ("title", "description", "owner__email", "owner__username")
     ordering = ("-created_at",)
     readonly_fields = ("id", "view_count", "created_at", "updated_at", "approved_at")
@@ -153,6 +161,16 @@ class ProjectAdmin(admin.ModelAdmin):
             url = reverse("admin:users_user_change", args=[obj.owner.pk])
             return format_html('<a href="{}">{}</a>', url, obj.owner.email)
         return "-"
+
+    @admin.display(
+        description="Promo opt-in",
+        boolean=True,
+        ordering="owner__opt_in_to_external_promotions",
+    )
+    def owner_promo_opt_in(self, obj: Project) -> bool | None:
+        if obj.owner:
+            return obj.owner.opt_in_to_external_promotions
+        return None
 
     @admin.display(description="Total Views")
     def view_count(self, obj: Project) -> int:
