@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ReadOnlyProjectDetail } from "@/app/my-projects/[id]/ReadOnlyProjectDetail";
-import { fetchProject, getAllProjectIds } from "@/lib/api/server";
+import { fetchProject, getAllProjectIds, ApiNotFoundError } from "@/lib/api/server";
 export const revalidate = 3600;
 
 interface PageProps {
@@ -64,8 +64,9 @@ export default async function ProjectPage({ params }: PageProps) {
   let project;
   try {
     project = await fetchProject(id);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiNotFoundError) notFound();
+    throw err;
   }
 
   return (
