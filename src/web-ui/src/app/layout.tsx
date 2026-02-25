@@ -21,14 +21,19 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "naglasúpan",
   description: "All great things start small",
+  icons: {
+    icon: [
+      { url: "/icons/favicon/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/favicon/apple-touch-icon.png" }],
+  },
   openGraph: {
     title: "naglasúpan",
     description: "All great things start small",
     images: [
       {
-        url: "/naglasupan.png",
-        width: 595,
-        height: 539,
+        url: "/icons/app/logo.png",
         alt: "naglasúpan",
       },
     ],
@@ -37,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "naglasúpan",
     description: "All great things start small",
-    images: ["/naglasupan.png"],
+    images: ["/icons/app/logo.png"],
   },
 };
 

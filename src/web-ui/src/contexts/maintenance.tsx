@@ -117,7 +117,7 @@ function MaintenancePage({ config }: { config: MaintenanceConfig }) {
       <div className="max-w-lg w-full text-center">
         <div className="mb-8">
           <Image
-            src="/naglasupan.svg"
+            src="/icons/app/logo-1.svg"
             alt="naglasúpan"
             width={120}
             height={120}
