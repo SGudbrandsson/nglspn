@@ -6,7 +6,7 @@ export function PlausibleTracker() {
   useEffect(() => {
     import("@plausible-analytics/tracker").then(({ init }) => {
       init({
-        domain: "naglasupan.com",
+        domain: "naglasupan.is",
       });
     });
   }, []);
