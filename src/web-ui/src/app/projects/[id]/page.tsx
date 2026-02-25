@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ReadOnlyProjectDetail } from "@/app/my-projects/[id]/ReadOnlyProjectDetail";
+import { ProjectTitleBanner } from "@/components/ProjectTitleBanner";
+import { ProjectNav } from "@/components/ProjectNav";
 import { fetchProject, getAllProjectIds, ApiNotFoundError } from "@/lib/api/server";
 export const revalidate = 3600;
 
@@ -71,6 +73,8 @@ export default async function ProjectPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-muted pt-14">
+      <ProjectTitleBanner project={project} />
+      <ProjectNav projectId={id} active="info" />
       <section className="py-8 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
           <ReadOnlyProjectDetail project={project} showStatus={false} />

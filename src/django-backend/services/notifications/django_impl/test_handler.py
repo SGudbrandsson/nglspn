@@ -8,6 +8,12 @@ from apps.projects.models import ProjectStatus
 from services.notifications.django_impl.handler import DjangoNotificationHandler
 from tests.factories import DiscussionFactory, ProjectFactory, UserFactory
 
+_SEND_EMAIL = (
+    "services.email.django_impl.handler"
+    ".DjangoEmailHandler"
+    ".send_discussion_notification_email"
+)
+
 
 @pytest.fixture
 def handler():
@@ -22,16 +28,14 @@ class TestRecipientDetermination:
         author = UserFactory()
         discussion = DiscussionFactory(project=project, author=author)
 
-        with patch("services.email.django_impl.handler.DjangoEmailHandler.send_discussion_notification_email"):
+        with patch(_SEND_EMAIL):
             handler.create_notifications_for_discussion(discussion.id)
 
         notifications = Notification.objects.all()
         assert_that(notifications.count(), equal_to(1))
         assert_that(notifications[0].recipient_id, equal_to(owner.id))
 
-    def test_root_discussion_by_owner_creates_no_notifications(
-        self, handler
-    ) -> None:
+    def test_root_discussion_by_owner_creates_no_notifications(self, handler) -> None:
         owner = UserFactory()
         project = ProjectFactory(owner=owner, status=ProjectStatus.APPROVED)
         discussion = DiscussionFactory(project=project, author=owner)
@@ -40,9 +44,7 @@ class TestRecipientDetermination:
 
         assert_that(Notification.objects.count(), equal_to(0))
 
-    def test_reply_notifies_project_owner_and_discussion_creator(
-        self, handler
-    ) -> None:
+    def test_reply_notifies_project_owner_and_discussion_creator(self, handler) -> None:
         owner = UserFactory()
         project = ProjectFactory(owner=owner, status=ProjectStatus.APPROVED)
         discussion_author = UserFactory()
@@ -50,12 +52,10 @@ class TestRecipientDetermination:
         replier = UserFactory()
         reply = DiscussionFactory(project=project, author=replier, parent=root)
 
-        with patch("services.email.django_impl.handler.DjangoEmailHandler.send_discussion_notification_email"):
+        with patch(_SEND_EMAIL):
             handler.create_notifications_for_discussion(reply.id)
 
-        recipient_ids = set(
-            Notification.objects.values_list("recipient_id", flat=True)
-        )
+        recipient_ids = set(Notification.objects.values_list("recipient_id", flat=True))
         assert_that(recipient_ids, equal_to({owner.id, discussion_author.id}))
 
     def test_reply_notifies_previous_participants(self, handler) -> None:
@@ -70,25 +70,21 @@ class TestRecipientDetermination:
         new_replier = UserFactory()
         reply = DiscussionFactory(project=project, author=new_replier, parent=root)
 
-        with patch("services.email.django_impl.handler.DjangoEmailHandler.send_discussion_notification_email"):
+        with patch(_SEND_EMAIL):
             handler.create_notifications_for_discussion(reply.id)
 
-        recipient_ids = set(
-            Notification.objects.values_list("recipient_id", flat=True)
-        )
+        recipient_ids = set(Notification.objects.values_list("recipient_id", flat=True))
         expected = {owner.id, root_author.id, participant_a.id, participant_b.id}
         assert_that(recipient_ids, equal_to(expected))
 
-    def test_deduplication_when_owner_is_also_discussion_creator(
-        self, handler
-    ) -> None:
+    def test_deduplication_when_owner_is_also_discussion_creator(self, handler) -> None:
         owner = UserFactory()
         project = ProjectFactory(owner=owner, status=ProjectStatus.APPROVED)
         root = DiscussionFactory(project=project, author=owner)
         replier = UserFactory()
         reply = DiscussionFactory(project=project, author=replier, parent=root)
 
-        with patch("services.email.django_impl.handler.DjangoEmailHandler.send_discussion_notification_email"):
+        with patch(_SEND_EMAIL):
             handler.create_notifications_for_discussion(reply.id)
 
         owner_notifications = Notification.objects.filter(recipient=owner)
@@ -100,7 +96,7 @@ class TestRecipientDetermination:
         author = UserFactory()
         discussion = DiscussionFactory(project=project, author=author)
 
-        with patch("services.email.django_impl.handler.DjangoEmailHandler.send_discussion_notification_email"):
+        with patch(_SEND_EMAIL):
             handler.create_notifications_for_discussion(discussion.id)
 
         author_notifications = Notification.objects.filter(recipient=author)

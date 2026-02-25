@@ -19,22 +19,16 @@ class TestListDiscussions:
         root = DiscussionFactory(project=project, author=user)
         DiscussionFactory(project=project, author=user, parent=root)
 
-        response = client.get(
-            f"/api/projects/{project.id}/discussions", **auth_headers
-        )
+        response = client.get(f"/api/projects/{project.id}/discussions", **auth_headers)
 
         assert_that(response.status_code, equal_to(200))
         data = response.json()
         assert_that(data, has_length(1))
         assert_that(data[0]["replies"], has_length(1))
 
-    def test_returns_empty_list_for_no_discussions(
-        self, client, auth_headers
-    ) -> None:
+    def test_returns_empty_list_for_no_discussions(self, client, auth_headers) -> None:
         project = ProjectFactory(status=ProjectStatus.APPROVED)
-        response = client.get(
-            f"/api/projects/{project.id}/discussions", **auth_headers
-        )
+        response = client.get(f"/api/projects/{project.id}/discussions", **auth_headers)
         assert_that(response.status_code, equal_to(200))
         assert_that(response.json(), has_length(0))
 
@@ -78,11 +72,14 @@ class TestCreateDiscussion:
             **auth_headers,
         )
         author = response.json()["author"]
-        assert_that(author, has_entries(
-            id=str(user.id),
-            first_name=user.first_name,
-            last_name=user.last_name,
-        ))
+        assert_that(
+            author,
+            has_entries(
+                id=str(user.id),
+                first_name=user.first_name,
+                last_name=user.last_name,
+            ),
+        )
 
 
 @pytest.mark.django_db
@@ -116,9 +113,7 @@ class TestReplyToDiscussion:
 
 @pytest.mark.django_db
 class TestDeleteDiscussion:
-    def test_author_can_delete_own_discussion(
-        self, client, user, auth_headers
-    ) -> None:
+    def test_author_can_delete_own_discussion(self, client, user, auth_headers) -> None:
         project = ProjectFactory(status=ProjectStatus.APPROVED)
         discussion = DiscussionFactory(project=project, author=user)
 
@@ -128,9 +123,7 @@ class TestDeleteDiscussion:
         )
         assert_that(response.status_code, equal_to(204))
 
-    def test_other_user_cannot_delete_discussion(
-        self, client, auth_headers
-    ) -> None:
+    def test_other_user_cannot_delete_discussion(self, client, auth_headers) -> None:
         other = UserFactory()
         project = ProjectFactory(status=ProjectStatus.APPROVED)
         discussion = DiscussionFactory(project=project, author=other)
