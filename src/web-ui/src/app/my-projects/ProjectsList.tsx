@@ -72,7 +72,7 @@ export function ProjectsList() {
         {[1, 2].map((i) => (
           <div key={i} className="bg-white rounded-xl border border-border p-5">
             <div className="flex gap-4">
-              <div className="skeleton w-20 h-20 rounded-lg" />
+              <div className="skeleton w-32 aspect-video rounded-lg" />
               <div className="flex-1">
                 <div className="skeleton h-5 w-1/3 mb-2" />
                 <div className="skeleton h-4 w-1/2 mb-2" />
@@ -116,13 +116,13 @@ export function ProjectsList() {
               >
                 <div className="flex gap-4">
                   {mainImage && (
-                    <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-slate-100">
+                    <div className="relative w-32 aspect-video flex-shrink-0 rounded-lg overflow-hidden bg-slate-100">
                       <Image
                         src={mainImage.url}
                         alt={project.title || "Project image"}
                         fill
-                        className="object-cover"
-                        sizes="80px"
+                        className="object-contain"
+                        sizes="128px"
                       />
                     </div>
                   )}
