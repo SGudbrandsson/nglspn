@@ -13,6 +13,13 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
 
+export class ApiNotFoundError extends Error {
+  constructor(path: string) {
+    super(`Not found: ${path}`);
+    this.name = "ApiNotFoundError";
+  }
+}
+
 async function serverFetch<T>(
   path: string,
   options?: { tags?: string[] }
@@ -20,7 +27,10 @@ async function serverFetch<T>(
   const res = await fetch(`${API_URL}${path}`, {
     next: { tags: options?.tags },
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    if (res.status === 404) throw new ApiNotFoundError(path);
+    throw new Error(`API error: ${res.status}`);
+  }
   return res.json();
 }
 
