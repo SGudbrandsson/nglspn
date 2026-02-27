@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isDev = process.env.NODE_ENV === "development";
+
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
@@ -8,7 +10,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://cdn.naglasupan.is https://*.s3.fr-par.scw.cloud",
-      "connect-src 'self' https://api.naglasupan.is https://cdn.naglasupan.is",
+      `connect-src 'self' https://api.naglasupan.is https://cdn.naglasupan.is${isDev ? " http://localhost:* http://127.0.0.1:*" : ""}`,
       "frame-ancestors 'none'",
     ].join("; "),
   },
