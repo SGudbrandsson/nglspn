@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CompetitionReveal } from "./CompetitionReveal";
-import { fetchCompetition, getAllCompetitionSlugs } from "@/lib/api/server";
+import { fetchCompetition, getAllCompetitionSlugs, ApiNotFoundError } from "@/lib/api/server";
 export const revalidate = 3600;
 
 interface PageProps {
@@ -51,8 +51,9 @@ export default async function CompetitionRevealPage({ params }: PageProps) {
   let competition;
   try {
     competition = await fetchCompetition(id);
-  } catch {
-    notFound();
+  } catch (err) {
+    if (err instanceof ApiNotFoundError) notFound();
+    throw err;
   }
 
   return (

@@ -8,6 +8,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.utils import timezone
 
 from apps.emails.models import BroadcastEmailRecipient
+from services.email import EMAIL_LOGO_URL
 from services.email.handler_interface import EmailHandlerInterface
 
 from . import render_email
@@ -32,7 +33,7 @@ class DjangoEmailHandler(EmailHandlerInterface):
             "code": code,
             "expiry_minutes": expires_minutes,
             "user_name": user.first_name or "there",
-            "logo_url": f"{settings.S3_PUBLIC_URL_BASE}/email/logo.png",
+            "logo_url": EMAIL_LOGO_URL,
             "current_year": timezone.now().year,
         }
         html, text = render_email("verification_code", context)
@@ -46,13 +47,37 @@ class DjangoEmailHandler(EmailHandlerInterface):
         email.attach_alternative(html, "text/html")
         email.send(fail_silently=False)
 
+    def send_password_reset_email(
+        self,
+        user: User,
+        code: str,
+        expires_minutes: int,
+    ) -> None:
+        context = {
+            "code": code,
+            "expiry_minutes": expires_minutes,
+            "user_name": user.first_name or "there",
+            "logo_url": EMAIL_LOGO_URL,
+            "current_year": timezone.now().year,
+        }
+        html, text = render_email("password_reset_code", context)
+
+        email = EmailMultiAlternatives(
+            subject="Reset your password - Naglasúpan",
+            body=text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[user.email],
+        )
+        email.attach_alternative(html, "text/html")
+        email.send(fail_silently=False)
+
     def send_project_approved_email(self, project: Project) -> None:
         owner = project.owner
         context = {
             "user_name": owner.first_name or "there",
             "project_title": project.title,
             "project_url": f"{settings.FRONTEND_URL}/projects/{project.id}",
-            "logo_url": f"{settings.S3_PUBLIC_URL_BASE}/email/logo.png",
+            "logo_url": EMAIL_LOGO_URL,
             "current_year": timezone.now().year,
         }
         html, text = render_email("project_approved", context)
