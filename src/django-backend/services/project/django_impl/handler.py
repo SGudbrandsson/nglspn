@@ -14,6 +14,7 @@ from apps.projects.models import (
     Project,
     ProjectContributor,
     ProjectImage,
+    ProjectReport,
     ProjectStatus,
 )
 from apps.projects.slugs import assign_unique_slug
@@ -42,6 +43,7 @@ if TYPE_CHECKING:
 
     from services.project.handler_interface import (
         CreateProjectInput,
+        ReportProjectInput,
         UpdateProjectInput,
     )
 
@@ -63,6 +65,15 @@ def _enqueue_new_project_notification(project: Project) -> None:
         logger.exception(
             "Failed to enqueue new-project notification for %s", project.id
         )
+
+
+def _enqueue_project_report_email(report: ProjectReport) -> None:
+    from api.tasks import email as email_tasks  # noqa: PLC0415
+
+    try:
+        email_tasks.send_project_report_email.enqueue(str(report.id))
+    except Exception:
+        logger.exception("Failed to enqueue project report email for %s", report.id)
 
 
 def _get_editable_project(project_id: UUID, user_id: UUID) -> Project:
@@ -220,6 +231,24 @@ class DjangoProjectHandler(ProjectHandlerInterface):
         _enqueue_new_project_notification(project)
 
         return stamp_competition_standing(project)
+
+    def report(self, data: ReportProjectInput) -> ProjectReport:
+        # Only what the public can see can be reported: a draft or a pending
+        # project has no visitors to find it broken.
+        if not Project.objects.filter(
+            id=data.project_id, status=ProjectStatus.APPROVED
+        ).exists():
+            raise ProjectNotFoundError
+
+        report = ProjectReport.objects.create(
+            project_id=data.project_id,
+            reason=data.reason,
+            details=data.details,
+            contact_email=data.contact_email,
+            reporter_id=data.reporter_id,
+        )
+        _enqueue_project_report_email(report)
+        return report
 
     def enter_competition(
         self, project_id: UUID, competition_id: UUID, user_id: UUID
