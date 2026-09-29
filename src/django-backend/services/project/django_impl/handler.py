@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
@@ -65,6 +66,9 @@ def _enqueue_new_project_notification(project: Project) -> None:
         logger.exception(
             "Failed to enqueue new-project notification for %s", project.id
         )
+
+
+PROJECT_REPORT_EMAIL_COOLDOWN = timedelta(hours=6)
 
 
 def _enqueue_project_report_email(report: ProjectReport) -> None:
@@ -233,21 +237,39 @@ class DjangoProjectHandler(ProjectHandlerInterface):
         return stamp_competition_standing(project)
 
     def report(self, data: ReportProjectInput) -> ProjectReport:
-        # Only what the public can see can be reported: a draft or a pending
-        # project has no visitors to find it broken.
-        if not Project.objects.filter(
-            id=data.project_id, status=ProjectStatus.APPROVED
-        ).exists():
-            raise ProjectNotFoundError
+        with transaction.atomic():
+            # Only what the public can see can be reported: a draft or a
+            # pending project has no visitors to find it broken. The row lock
+            # serialises concurrent reports so the cooldown check below can't
+            # let two emails through at once.
+            project = (
+                Project.objects.select_for_update()
+                .filter(id=data.project_id, status=ProjectStatus.APPROVED)
+                .first()
+            )
+            if project is None:
+                raise ProjectNotFoundError
 
-        report = ProjectReport.objects.create(
-            project_id=data.project_id,
-            reason=data.reason,
-            details=data.details,
-            contact_email=data.contact_email,
-            reporter_id=data.reporter_id,
-        )
-        _enqueue_project_report_email(report)
+            # The endpoint is open to anyone, so the per-IP rate limit alone
+            # would let a handful of addresses mail a maker all day. Every
+            # report is kept; the makers hear about at most one per cooldown.
+            recently_notified = ProjectReport.objects.filter(
+                project=project,
+                makers_notified=True,
+                created_at__gte=timezone.now() - PROJECT_REPORT_EMAIL_COOLDOWN,
+            ).exists()
+
+            report = ProjectReport.objects.create(
+                project=project,
+                reason=data.reason,
+                details=data.details,
+                contact_email=data.contact_email,
+                reporter_id=data.reporter_id,
+                makers_notified=not recently_notified,
+            )
+
+        if report.makers_notified:
+            _enqueue_project_report_email(report)
         return report
 
     def enter_competition(

@@ -527,8 +527,14 @@ class ProjectViewAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectReport)
 class ProjectReportAdmin(admin.ModelAdmin):
-    list_display = ("project_link", "reason", "contact_email", "created_at")
-    list_filter = ("reason", "created_at")
+    list_display = (
+        "project_link",
+        "reason",
+        "contact_email",
+        "makers_notified",
+        "created_at",
+    )
+    list_filter = ("reason", "makers_notified", "created_at")
     search_fields = ("project__title", "contact_email", "details")
     readonly_fields = (
         "id",
@@ -537,6 +543,7 @@ class ProjectReportAdmin(admin.ModelAdmin):
         "details",
         "contact_email",
         "reporter",
+        "makers_notified",
         "created_at",
     )
     ordering = ("-created_at",)

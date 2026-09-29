@@ -102,6 +102,9 @@ export function ProjectTitleBanner({ project, iconUrl }: ProjectTitleBannerProps
           onClose={() => setIsReportOpen(false)}
           projectSlugOrId={project.slug ?? project.id}
           projectTitle={project.title}
+          hasMakers={project.contributors.some(
+            (c) => c.full_edit && !c.user.is_system_user
+          )}
         />
       )}
     </section>

@@ -63,6 +63,9 @@ interface ReportProblemDialogProps {
   onClose: () => void;
   projectSlugOrId: string;
   projectTitle: string;
+  // False for an unclaimed tip-off. Its reports go to the Naglasúpan team, and
+  // a visitor leaving an address has to be told that before they send it.
+  hasMakers: boolean;
 }
 
 export function ReportProblemDialog(props: ReportProblemDialogProps) {
@@ -76,6 +79,7 @@ function ReportProblemForm({
   onClose,
   projectSlugOrId,
   projectTitle,
+  hasMakers,
 }: ReportProblemDialogProps) {
   const { user } = useAuth();
   const [reason, setReason] = useState<ProjectReportReason | null>(null);
@@ -90,6 +94,7 @@ function ReportProblemForm({
 
   const selected = REASONS.find((r) => r.id === reason);
   const name = projectTitle || "this project";
+  const recipients = hasMakers ? "the makers" : "the Naglasúpan team";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,8 +139,9 @@ function ReportProblemForm({
             Thanks for letting them know
           </h2>
           <p className="text-sm text-muted-foreground mt-2">
-            We&apos;ve emailed your report to the people behind{" "}
-            <span className="text-foreground font-medium">{name}</span>.
+            Your report on{" "}
+            <span className="text-foreground font-medium">{name}</span> is with
+            us, and we&apos;ll make sure {recipients} hear about it.
           </p>
           <button
             type="button"
@@ -168,9 +174,19 @@ function ReportProblemForm({
           Something not working?
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Let the makers of{" "}
-          <span className="text-foreground font-medium">{name}</span> know. We
-          pass your report on to them by email.
+          {hasMakers ? (
+            <>
+              Let the makers of{" "}
+              <span className="text-foreground font-medium">{name}</span> know.
+              We pass your report on to them by email.
+            </>
+          ) : (
+            <>
+              <span className="text-foreground font-medium">{name}</span>{" "}
+              has no maker on Naglasúpan, so your report goes to the
+              Naglasúpan team.
+            </>
+          )}
         </p>
 
         <fieldset className="mt-5">
@@ -257,7 +273,7 @@ function ReportProblemForm({
                 className="mt-0.5"
               />
               <span>
-                Let the makers reply to me at{" "}
+                Let {recipients} reply to me at{" "}
                 <span className="font-medium">{user.email}</span>
               </span>
             </label>
@@ -283,7 +299,7 @@ function ReportProblemForm({
                 className="input"
               />
               <p className="text-xs text-muted-foreground mt-1.5">
-                Only shared with the makers, so they can ask you about it.
+                Only shared with {recipients}, so they can ask you about it.
               </p>
             </>
           )}

@@ -30,13 +30,14 @@ function unmount(root: Root, container: HTMLElement) {
   container.remove();
 }
 
-function renderDialog() {
+function renderDialog({ hasMakers = true } = {}) {
   return mount(
     <ReportProblemDialog
       isOpen
       onClose={() => {}}
       projectSlugOrId="dead-app"
       projectTitle="Dead App"
+      hasMakers={hasMakers}
     />,
   );
 }
@@ -85,6 +86,7 @@ describe("ReportProblemDialog", () => {
         onClose={() => {}}
         projectSlugOrId="dead-app"
         projectTitle="Dead App"
+        hasMakers
       />,
     );
     expect(container.querySelector("form")).toBeNull();
@@ -121,6 +123,7 @@ describe("ReportProblemDialog", () => {
       contact_email: "visitor@example.com",
     });
     expect(container.textContent).toContain("Thanks for letting them know");
+    expect(container.textContent).toContain("the makers hear about it");
     cleanup();
   });
 
@@ -168,6 +171,19 @@ describe("ReportProblemDialog", () => {
       "try again later",
     );
     expect(submitButton(container).disabled).toBe(false);
+    cleanup();
+  });
+
+  it("tells the visitor an unclaimed project's report goes to the team", async () => {
+    const { container, unmount: cleanup } = await renderDialog({
+      hasMakers: false,
+    });
+
+    expect(container.textContent).toContain("has no maker on Naglasúpan");
+    expect(container.textContent).toContain(
+      "Only shared with the Naglasúpan team",
+    );
+    expect(container.textContent).not.toContain("shared with the makers");
     cleanup();
   });
 });

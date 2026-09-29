@@ -235,6 +235,9 @@ class ProjectReport(models.Model):
         blank=True,
         related_name="project_reports",
     )
+    # False when the report arrived inside the email cooldown: it is kept for
+    # the admin, but the makers were not emailed about it.
+    makers_notified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

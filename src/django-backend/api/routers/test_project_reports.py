@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.core import mail
+from django.utils import timezone
 from hamcrest import (
     assert_that,
     contains_string,
@@ -18,6 +21,7 @@ from apps.projects.models import (
     ProjectStatus,
 )
 from services import REPO
+from services.project.django_impl.handler import PROJECT_REPORT_EMAIL_COOLDOWN
 from tests.factories import ProjectFactory, UserFactory
 
 
@@ -263,3 +267,53 @@ class TestProjectReportEmail:
         assert_that(
             sorted(sent_to), equal_to(sorted([project.creator.email, co_maker.email]))
         )
+
+
+@pytest.mark.django_db
+class TestProjectReportEmailCooldown:
+    def test_a_second_report_inside_the_cooldown_is_kept_but_not_emailed(self, client):
+        project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
+
+        _report(client, project, details="first")
+        response = _report(client, project, details="second")
+
+        assert_that(response.status_code, equal_to(201))
+        assert_that(mail.outbox, has_length(1))
+        assert_that(mail.outbox[0].body, contains_string("first"))
+        second = ProjectReport.objects.get(details="second")
+        assert_that(second.makers_notified, is_(False))
+
+    def test_cooldown_is_per_project(self, client):
+        one = ProjectFactory(status=ProjectStatus.APPROVED, slug="one")
+        two = ProjectFactory(status=ProjectStatus.APPROVED, slug="two")
+
+        _report(client, one)
+        _report(client, two)
+
+        assert_that(mail.outbox, has_length(2))
+
+    def test_emails_again_once_the_cooldown_has_passed(self, client):
+        project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
+        _report(client, project)
+        ProjectReport.objects.update(
+            created_at=timezone.now()
+            - PROJECT_REPORT_EMAIL_COOLDOWN
+            - timedelta(minutes=1)
+        )
+
+        _report(client, project)
+
+        assert_that(mail.outbox, has_length(2))
+        assert_that(
+            ProjectReport.objects.filter(makers_notified=True).count(), equal_to(2)
+        )
+
+    def test_an_unsent_report_does_not_restart_the_cooldown(self, client):
+        project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
+        ProjectReport.objects.create(
+            project=project, reason="site_down", makers_notified=False
+        )
+
+        _report(client, project)
+
+        assert_that(mail.outbox, has_length(1))
