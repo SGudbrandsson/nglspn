@@ -70,7 +70,8 @@ async function submit(container: HTMLElement) {
 
 describe("ReportProblemDialog", () => {
   beforeEach(() => {
-    authState.value = { user: null };
+    // Reporting needs a signed-in user; the banner sends everyone else to login.
+    authState.value = { user: { email: "me@example.com" } };
     vi.mocked(api.projects.report).mockReset();
     vi.mocked(api.projects.report).mockResolvedValue({
       id: "r1",
@@ -103,16 +104,25 @@ describe("ReportProblemDialog", () => {
     cleanup();
   });
 
-  it("sends the reason, details and contact address, then thanks", async () => {
+  it("renders nothing for a signed-out visitor", async () => {
+    authState.value = { user: null };
+    const { container, unmount: cleanup } = await renderDialog();
+    expect(container.innerHTML).toBe("");
+    cleanup();
+  });
+
+  it("has no free-text email field", async () => {
+    const { container, unmount: cleanup } = await renderDialog();
+    expect(container.querySelector("#report-contact")).toBeNull();
+    cleanup();
+  });
+
+  it("sends the reason and details, then thanks", async () => {
     const { container, unmount: cleanup } = await renderDialog();
     await choose(container, "something_broken");
     await type(
       container.querySelector("#report-details") as HTMLTextAreaElement,
       "  Login fails  ",
-    );
-    await type(
-      container.querySelector("#report-contact") as HTMLInputElement,
-      "visitor@example.com",
     );
 
     await submit(container);
@@ -120,7 +130,7 @@ describe("ReportProblemDialog", () => {
     expect(api.projects.report).toHaveBeenCalledWith("dead-app", {
       reason: "something_broken",
       details: "Login fails",
-      contact_email: "visitor@example.com",
+      contact_email: "",
     });
     expect(container.textContent).toContain("Thanks for letting them know");
     expect(container.textContent).toContain("the makers hear about it");
@@ -181,9 +191,9 @@ describe("ReportProblemDialog", () => {
 
     expect(container.textContent).toContain("has no maker on Naglasúpan");
     expect(container.textContent).toContain(
-      "Only shared with the Naglasúpan team",
+      "Let the Naglasúpan team reply to me",
     );
-    expect(container.textContent).not.toContain("shared with the makers");
+    expect(container.textContent).not.toContain("the makers reply");
     cleanup();
   });
 });

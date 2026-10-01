@@ -64,15 +64,17 @@ interface ReportProblemDialogProps {
   projectSlugOrId: string;
   projectTitle: string;
   // False for an unclaimed tip-off. Its reports go to the Naglasúpan team, and
-  // a visitor leaving an address has to be told that before they send it.
+  // a reporter sharing their address has to be told that before they send it.
   hasMakers: boolean;
 }
 
 export function ReportProblemDialog(props: ReportProblemDialogProps) {
+  const { user } = useAuth();
   // Mounted only while open, so every report starts from a blank form rather
-  // than the last one's leftovers.
-  if (!props.isOpen) return null;
-  return <ReportProblemForm {...props} />;
+  // than the last one's leftovers. Reporting needs an account; the banner
+  // sends signed-out visitors to log in instead of opening this.
+  if (!props.isOpen || !user) return null;
+  return <ReportProblemForm {...props} userEmail={user.email} />;
 }
 
 function ReportProblemForm({
@@ -80,13 +82,12 @@ function ReportProblemForm({
   projectSlugOrId,
   projectTitle,
   hasMakers,
-}: ReportProblemDialogProps) {
-  const { user } = useAuth();
+  userEmail,
+}: ReportProblemDialogProps & { userEmail: string }) {
   const [reason, setReason] = useState<ProjectReportReason | null>(null);
   const [details, setDetails] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  // A signed-in visitor's address is on file, but it is only handed to the
-  // makers when they tick this. Nothing is shared by default.
+  // The reporter's address is on file, but it is only handed to the makers
+  // when they tick this. Nothing is shared by default.
   const [shareMyEmail, setShareMyEmail] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
@@ -105,11 +106,7 @@ function ReportProblemForm({
       await api.projects.report(projectSlugOrId, {
         reason,
         details: details.trim(),
-        contact_email: user
-          ? shareMyEmail
-            ? user.email
-            : ""
-          : contactEmail.trim(),
+        contact_email: shareMyEmail ? userEmail : "",
       });
       setIsSent(true);
     } catch (err) {
@@ -118,7 +115,7 @@ function ReportProblemForm({
           "You've sent a few reports in a short time. Please try again later.",
         );
       } else if (err instanceof ApiRequestError && err.status === 422) {
-        setError("Please check the email address and try again.");
+        setError("Please check the report and try again.");
       } else {
         setError("Couldn't send the report. Please try again.");
       }
@@ -264,45 +261,18 @@ function ReportProblemForm({
         </div>
 
         <div className="mt-4">
-          {user ? (
-            <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={shareMyEmail}
-                onChange={(e) => setShareMyEmail(e.target.checked)}
-                className="mt-0.5"
-              />
-              <span>
-                Let {recipients} reply to me at{" "}
-                <span className="font-medium">{user.email}</span>
-              </span>
-            </label>
-          ) : (
-            <>
-              <label
-                htmlFor="report-contact"
-                className="block text-sm font-medium text-foreground mb-1.5"
-              >
-                Your email{" "}
-                <span className="font-normal text-muted-foreground">
-                  (optional)
-                </span>
-              </label>
-              <input
-                id="report-contact"
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                maxLength={254}
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="input"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Only shared with {recipients}, so they can ask you about it.
-              </p>
-            </>
-          )}
+          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={shareMyEmail}
+              onChange={(e) => setShareMyEmail(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Let {recipients} reply to me at{" "}
+              <span className="font-medium">{userEmail}</span>
+            </span>
+          </label>
         </div>
 
         {error && (

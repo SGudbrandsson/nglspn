@@ -2,12 +2,15 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { FlagIcon } from "@heroicons/react/24/outline";
 import type { Project } from "@/lib/api";
 import { getAuthorName } from "@/lib/utils";
 import { FollowButton } from "@/components/FollowButton";
 import { TipoffBadge } from "@/components/TipoffBadge";
 import { ReportProblemDialog } from "@/components/ReportProblemDialog";
+import { useAuth } from "@/contexts/auth";
+import { buildLoginPath } from "@/lib/auth-routing";
 
 interface ProjectTitleBannerProps {
   project: Project;
@@ -22,6 +25,21 @@ export function ProjectTitleBanner({ project, iconUrl }: ProjectTitleBannerProps
   // Only a live project has visitors to find it broken. The my-projects
   // preview of a draft renders this banner too, and must not offer it.
   const isReportable = project.status === "approved";
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Reports need an account: signed-out visitors log in first and come back
+  // here. A click while the session is still loading is ignored, so a
+  // signed-in visitor is never sent to the login page by mistake.
+  const handleReportClick = () => {
+    if (authLoading) return;
+    if (user) {
+      setIsReportOpen(true);
+    } else {
+      router.push(buildLoginPath(pathname));
+    }
+  };
 
   return (
     <section className="relative bg-white border-b border-border py-10 px-4 sm:px-6">
@@ -69,7 +87,7 @@ export function ProjectTitleBanner({ project, iconUrl }: ProjectTitleBannerProps
               {isReportable && (
                 <button
                   type="button"
-                  onClick={() => setIsReportOpen(true)}
+                  onClick={handleReportClick}
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <FlagIcon className="w-3.5 h-3.5" aria-hidden="true" />
