@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.core import mail
+from django.test import Client
 from django.utils import timezone
 from hamcrest import (
     assert_that,
@@ -9,9 +10,9 @@ from hamcrest import (
     equal_to,
     has_length,
     is_,
-    none,
 )
 
+from api.auth.jwt import create_access_token
 from api.tasks import email as email_tasks
 from apps.emails.models import SentEmail, SentEmailType
 from apps.projects.models import (
@@ -25,6 +26,17 @@ from services.project.django_impl.handler import PROJECT_REPORT_EMAIL_COOLDOWN
 from tests.factories import ProjectFactory, UserFactory
 
 
+@pytest.fixture
+def client(auth_headers):
+    """Reporting requires a signed-in user, so every request here is one."""
+    return Client(**auth_headers)
+
+
+@pytest.fixture
+def anonymous_client():
+    return Client()
+
+
 def _report(client, project, **payload):
     body = {"reason": "site_down", **payload}
     return client.post(
@@ -36,7 +48,7 @@ def _report(client, project, **payload):
 
 @pytest.mark.django_db
 class TestReportProjectEndpoint:
-    def test_anonymous_visitor_can_report(self, client):
+    def test_signed_in_user_can_report(self, client, user):
         project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
 
         response = _report(client, project, details="  Blank page since Monday  ")
@@ -46,20 +58,16 @@ class TestReportProjectEndpoint:
         assert_that(report.project_id, equal_to(project.id))
         assert_that(report.reason, equal_to("site_down"))
         assert_that(report.details, equal_to("Blank page since Monday"))
-        assert_that(report.reporter, is_(none()))
+        assert_that(report.reporter_id, equal_to(user.id))
 
-    def test_records_the_signed_in_reporter(self, client, user, auth_headers):
+    def test_anonymous_visitor_cannot_report(self, anonymous_client):
         project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
 
-        response = client.post(
-            f"/api/projects/{project.slug}/reports",
-            {"reason": "other"},
-            content_type="application/json",
-            **auth_headers,
-        )
+        response = _report(anonymous_client, project)
 
-        assert_that(response.status_code, equal_to(201))
-        assert_that(ProjectReport.objects.get().reporter_id, equal_to(user.id))
+        assert_that(response.status_code, equal_to(401))
+        assert_that(ProjectReport.objects.exists(), is_(False))
+        assert_that(mail.outbox, has_length(0))
 
     def test_accepts_the_project_id(self, client):
         project = ProjectFactory(status=ProjectStatus.APPROVED)
@@ -107,7 +115,7 @@ class TestReportProjectEndpoint:
         response = _report(client, project, details="x" * 2001)
         assert_that(response.status_code, equal_to(422))
 
-    def test_rate_limited_per_ip(self, client):
+    def test_rate_limited_per_user(self, client):
         project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
         for _ in range(5):
             assert_that(_report(client, project).status_code, equal_to(201))
@@ -116,6 +124,18 @@ class TestReportProjectEndpoint:
 
         assert_that(response.status_code, equal_to(429))
         assert_that(ProjectReport.objects.count(), equal_to(5))
+
+    def test_rate_limit_is_not_shared_between_users_on_one_ip(self, client):
+        project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
+        for _ in range(5):
+            _report(client, project)
+        other = Client(
+            HTTP_AUTHORIZATION=f"Bearer {create_access_token(UserFactory().id)}"
+        )
+
+        response = _report(other, project)
+
+        assert_that(response.status_code, equal_to(201))
 
 
 @pytest.mark.django_db
@@ -178,17 +198,10 @@ class TestProjectReportEmail:
         assert_that(message.reply_to, equal_to([]))
         assert_that(message.body, contains_string("didn't leave a contact address"))
 
-    def test_signed_in_reporter_address_is_not_shared_unless_given(
-        self, client, auth_headers
-    ):
+    def test_signed_in_reporter_address_is_not_shared_unless_given(self, client):
         project = ProjectFactory(status=ProjectStatus.APPROVED, slug="dead-app")
 
-        client.post(
-            f"/api/projects/{project.slug}/reports",
-            {"reason": "site_down"},
-            content_type="application/json",
-            **auth_headers,
-        )
+        _report(client, project)
 
         assert_that(mail.outbox[0].reply_to, equal_to([]))
 

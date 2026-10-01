@@ -3,6 +3,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Query, Router
 
+from api.auth.security import auth
 from api.rate_limit import check_rate_limit
 from api.routers._helpers import get_optional_user
 from api.schemas.errors import Error
@@ -196,7 +197,8 @@ def get_project(
 
 @router.post(
     "/{identifier}/reports",
-    response={201: ProjectReportResponse, 404: Error, 429: Error},
+    response={201: ProjectReportResponse, 401: Error, 404: Error, 429: Error},
+    auth=auth,
     tags=["Projects"],
 )
 def report_project(
@@ -204,11 +206,14 @@ def report_project(
     identifier: str,
     payload: ProjectReportCreate,
 ) -> Any:
-    # Open to visitors who aren't signed in — they are the ones most likely to
-    # hit a dead link — so the only brake on a flood of email to a maker is
-    # this per-IP limit.
-    rate_limit_response = check_rate_limit(request, "report_project", "5/h")
-    if rate_limit_response:
+    # Signed-in users only: an anonymous form let anyone send email to a maker
+    # in Naglasúpan's name, and reports marked as spam cost the domain its
+    # sending reputation. The limit is per account, so users behind one NAT
+    # don't share it.
+    rate_limit_response = check_rate_limit(
+        request, "report_project", "5/h", key=str(request.auth.id)
+    )
+    if rate_limit_response is not None:
         return rate_limit_response
 
     try:
@@ -216,7 +221,6 @@ def report_project(
     except ProjectNotFoundError:
         return 404, {"detail": "Project not found"}
 
-    user = get_optional_user(request)
     try:
         report: ProjectReport = HANDLERS.project.report(
             ReportProjectInput(
@@ -224,7 +228,7 @@ def report_project(
                 reason=payload.reason,
                 details=payload.details,
                 contact_email=payload.contact_email,
-                reporter_id=user.id if user else None,
+                reporter_id=request.auth.id,
             )
         )
     except ProjectNotFoundError:
